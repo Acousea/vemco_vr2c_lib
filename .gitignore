@@ -1,0 +1,7 @@
+.pio
+.vscode
+.idea
+cmake-build*
+build
+bin
+
