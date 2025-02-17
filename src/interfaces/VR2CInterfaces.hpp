@@ -12,6 +12,7 @@ public:
     virtual ~SerialInterface() = default;
     virtual size_t available() = 0;
     virtual int read() = 0;
+    virtual void clean() = 0;
     virtual void write(const std::string &data) = 0;
 };
 
@@ -19,7 +20,7 @@ public:
 using TimeCallback = std::function<uint32_t()>;
 
 // Logging Callback Interface
-using LogCallback = std::function<void(const std::string &)>;
+using LogCallback = std::function<void(const std::string&)>;
 
 
 

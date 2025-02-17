@@ -2,29 +2,58 @@
 #define VEMCO_VR2C_LIB_VR2C_DEVICE_H
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <functional>
 
-#include "../VR2CCommunicator/VR2CCommunicator.hpp"
-#include "../VR2CMessageParser/VR2CMessageParser.hpp"
-#include "../interfaces/VR2CInterfaces.hpp"
+#include "VR2CCommunicator/VR2CCommunicator.hpp"
+#include "interfaces/VR2CInterfaces.hpp"
+#include "response/responses/StatusResponse/StatusResponse.hpp"
+#include <iostream>
 
 class VR2CDevice {
-public:
-    VR2CDevice(SerialInterface &serial, TimeCallback timeProvider, LogCallback logger = nullptr);
-
-    bool initialize();
-    bool setTime();
-    int listenForMessages(uint32_t timeout_ms, VR2CStatus &status, VR2CDetection &detection);
-    int sendCommand(const std::string &cmd, bool await_ack = true);
-
 private:
-    SerialInterface &serial;
-    TimeCallback getTimeMs;
-    LogCallback log;
+    std::string serialNumber;
+    VR2CCommunicator communicator;
+    LogCallback logger;
+    TimeCallback timeProvider;
 
-    int processStatusMessage(const std::string &message, VR2CStatus &status);
-    int processDetectionMessage(const std::string &message, VR2CDetection &detection);
+public:
+    // Constructor to initialize the device with the serial interface and callbacks
+    VR2CDevice(std::string serialNumber, SerialInterface &serialInterface,
+               const LogCallback &logCallback, const TimeCallback &timeCallback)
+            : serialNumber(std::move(serialNumber)),
+              communicator(serialInterface, logCallback, timeCallback),
+              logger(logCallback),
+              timeProvider(timeCallback) {}
+
+    // Set the baud rate of the device
+    bool setBaudRate(int baudRate) {
+        VR2CCommand command = VR2CCommand::Factory::createBaudRateCommand(serialNumber, baudRate);
+//        return communicator.sendCommand(command).has_value();
+        return true;
+    }
+
+    // Send the QUIT command to end the current session
+    bool quit() {
+        VR2CCommand command = VR2CCommand::Factory::createQuitCommand(serialNumber);
+//        return communicator.sendCommand(command).has_value();
+        return true;
+    }
+
+    // Send the STATUS command to get the status of the device
+    bool getStatus() {
+        VR2CCommand command = VR2CCommand::Factory::createStatusCommand(serialNumber);
+        auto result = communicator.sendCommand<StatusResponse>(command);
+        if (!result.has_value()) {
+            return false;
+        }
+        auto &response = result.value();
+        logger("Received status response: " + response.toString());
+        // Do something with the response
+        return true;
+    }
+
 };
 
 #endif // VEMCO_VR2C_LIB_VR2C_DEVICE_H
