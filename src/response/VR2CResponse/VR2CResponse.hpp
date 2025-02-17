@@ -30,7 +30,7 @@ public:
 private:
     std::string serialNumber;
     int port;
-    int checksum;
+    int hash;
     int length;
     ResponseStatus status;
     uint8_t receivedChecksum;
@@ -48,7 +48,7 @@ public:
 
     [[nodiscard]] int getPort() const { return port; }
 
-    [[nodiscard]] int getChecksum() const { return checksum; }
+    [[nodiscard]] int getChecksum() const { return hash; }
 
     [[nodiscard]] int getLength() const { return length; }
 
@@ -128,7 +128,7 @@ public:
             return {VR2CResult::MSG_TOO_SMALL, "Missing checksum delimiter: " + header};
         }
 
-        if (std::from_chars(header.data() + hashPos + 1, header.data() + header.size(), checksum).ec != std::errc()) {
+        if (std::from_chars(header.data() + hashPos + 1, header.data() + header.size(), hash).ec != std::errc()) {
             return {VR2CResult::MSG_TOO_SMALL, "Invalid checksum value: " + header};
         }
 

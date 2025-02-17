@@ -9,6 +9,7 @@
 #include "VR2CCommunicator/VR2CCommunicator.hpp"
 #include "interfaces/VR2CInterfaces.hpp"
 #include "response/responses/StatusResponse/StatusResponse.hpp"
+#include "response/responses/InfoResponse/InfoResponse.hpp"
 #include <iostream>
 
 class VR2CDevice {
@@ -41,17 +42,26 @@ public:
         return true;
     }
 
+
+    [[nodiscard]] std::optional<InfoResponse> getInfo() {
+        VR2CCommand command = VR2CCommand::Factory::createInfoCommand(serialNumber);
+        auto result = communicator.sendCommand<InfoResponse>(command);
+        return result;
+    }
+
+
     // Send the STATUS command to get the status of the device
-    bool getStatus() {
+    std::optional<StatusResponse> getStatus() {
         VR2CCommand command = VR2CCommand::Factory::createStatusCommand(serialNumber);
         auto result = communicator.sendCommand<StatusResponse>(command);
         if (!result.has_value()) {
-            return false;
+            logger("Failed to get status response");
+            return {};
         }
         auto &response = result.value();
         logger("Received status response: " + response.toString());
         // Do something with the response
-        return true;
+        return response;
     }
 
 };

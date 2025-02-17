@@ -42,50 +42,32 @@ private:
 
 public:
     VR2CResult decode(const std::string &response) override {
-//        // Decode the basic structure using the parent class
-//        VR2CResult baseResult = VR2CResponse::decode(response);
-//        if (!baseResult.isSuccess()) {
-//            return baseResult;  // Return the error if the base decoding fails
-//        }
-//
-//        // Tokenize the responseData using ',' as the delimiter
-//        char buffer[responseData.size() + 1];
-//        std::strcpy(buffer, responseData.c_str());
-//
-//        char *token = std::strtok(buffer, ",");
-//        int tokenIndex = 0;
-//
-//        while (token != nullptr) {
-//            switch (tokenIndex) {
-//                case 0:  // VR2C Frequency and serial number (e.g., VR2C-69:450088)
-//                {
-//                    char *colonPos = std::strchr(token, ':');
-//                    if (colonPos == nullptr) {
-//                        return {VR2CResult::MSG_TOO_SMALL, "Missing ':' in VR2C frequency/serial pair"};
-//                    }
-//                    *colonPos = '\0';
-//                    frequency = token;
-//                    serialNumber = colonPos + 1;
-//                    break;
-//                }
-//                case 1:  // Study description (trim quotes if present)
-//                    studyDescription = trimQuotes(token);
-//                    break;
-//                case 2:  // Active code map (e.g., MAP-113)
-//                    activeCodeMap = token;
-//                    break;
-//                default:  // Firmware and hardware versions (e.g., FW=1.0.2, HW=3)
-//                    if (!parseKeyValuePair(token)) {
-//                        return {VR2CResult::MSG_TOO_SMALL, "Failed to parse key-value pair: " + std::string(token)};
-//                    }
-//                    break;
-//            }
-//            token = std::strtok(nullptr, ",");
-//            ++tokenIndex;
-//        }
+        // Decode the basic structure using the parent class
+        VR2CResult baseResult = VR2CResponse::decode(response);
+        if (!baseResult.isSuccess()) {
+            return baseResult;  // Return the error if the base decoding fails
+        }
+
+        if (responseData.size() < 5) {
+            return {VR2CResult::ErrorCode::MSG_CONTENT_INVALID, "Invalid INFO response format"};
+        }
+
+        // Assign fields based on responseData order
+        frequency = responseData[0];          // e.g., "VR2C-69"
+        serialNumber = responseData[1];       // e.g., "450088"
+        studyDescription = trimQuotes(responseData[2]); // e.g., "'Possum Lake Fish Study #1'"
+        activeCodeMap = responseData[3];      // e.g., "MAP-113"
+
+        // Parse the last two key-value fields (FW and HW)
+        for (size_t i = 4; i < responseData.size(); ++i) {
+            if (!parseKeyValuePair(responseData[i])) {
+                return {VR2CResult::ErrorCode::MSG_CONTENT_INVALID, "Unknown key in INFO response: " + responseData[i]};
+            }
+        }
 
         return VR2CResult(VR2CResult::SUCCESS);
     }
+
 
     [[nodiscard]] std::string toString() const override {
         return "Frequency: " + frequency + ", Serial: " + serialNumber + ", Study: " + studyDescription +
